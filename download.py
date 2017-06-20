@@ -28,9 +28,9 @@ counter = 1
 for filename in site.nlst():
   fhandle = open(output+filename+'.fna', 'wb')
   print str(counter) + ': Getting ' + filename #for confort sake, shows the file that's being retrieved
-  counter += 1
   try:
     site.retrbinary('RETR ' + filename+'/'+filename+'.fna', fhandle.write)
     fhandle.close()
+    counter += 1
   except:
     print "%s not retrievable" %filename
