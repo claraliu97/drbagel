@@ -24,8 +24,13 @@ site.cwd('/patric2/current_release/genomes_by_species/%s/' %species)
 output = species+"/"
 os.mkdir(output)
 
+counter = 1
 for filename in site.nlst():
   fhandle = open(output+filename+'.fna', 'wb')
-  print 'Getting ' + filename #for confort sake, shows the file that's being retrieved
-  site.retrbinary('RETR ' + filename+'/'+filename+'.fna', fhandle.write)
-  fhandle.close()
+  print str(counter) + ': Getting ' + filename #for confort sake, shows the file that's being retrieved
+  counter += 1
+  try:
+    site.retrbinary('RETR ' + filename+'/'+filename+'.fna', fhandle.write)
+    fhandle.close()
+  except:
+    print "%s not retrievable" %filename
