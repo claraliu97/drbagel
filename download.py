@@ -14,6 +14,7 @@ import sys, os
 #msg = site.login('anonymous@ftp.patricbrc.org')
 
 species = 'Mycobacterium_tuberculosis'
+extension = '.PATRIC.ffn'
 
 site = FTP("ftp.patricbrc.org")
 site.login()
@@ -21,16 +22,17 @@ site.login()
 site.cwd('/patric2/current_release/genomes_by_species/%s/' %species)
 
 
-output = species+"/"
+output = species+"/"+extension[1:]+"/"
 os.mkdir(output)
 
 counter = 1
 for filename in site.nlst():
-  fhandle = open(output+filename+'.fna', 'wb')
+  fhandle = open(output+filename+"."+extension, 'wb')
   print str(counter) + ': Getting ' + filename #for confort sake, shows the file that's being retrieved
   try:
-    site.retrbinary('RETR ' + filename+'/'+filename+'.fna', fhandle.write)
+    site.retrbinary('RETR ' + filename+'/'+filename+extension, fhandle.write)
     fhandle.close()
     counter += 1
   except:
+    #os.remove(output+filename+"."+extension)
     print "%s not retrievable" %filename
