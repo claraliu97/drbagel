@@ -30,7 +30,9 @@ def create_db(input_dir,file_list):
       continue
     genome = file_name[:file_name.find('.'+extension)]
 
-    make_db = "makeblastdb -in %s%s.%s -dbtype nucl -parse_seqids \
+    #make_db = "makeblastdb -in %s%s.%s -dbtype nucl -parse_seqids \
+
+    make_db = "makeblastdb -in %s%s.%s -dbtype nucl \
     -out db_%s/%s/%s -title '%s'\n" %(input_dir,genome,extension,extension,genome,genome,genome)
 
     os.system("mkdir -p temp")
@@ -63,6 +65,7 @@ def parse_single_blast2(result_handle,ref_gene,txt):
   pass
 
 def parse_single_blast(result_handle,ref_gene,genome_records,txt):
+  global counter
   counter += 1
 
   ref_gene = ref_gene.seq
@@ -71,8 +74,8 @@ def parse_single_blast(result_handle,ref_gene,genome_records,txt):
   blast_record = NCBIXML.read(result_handle)
   #find the best hit (filter the off-target hits)
   alignment = sorted(blast_record.alignments,cmp=lambda x,y: x.length-y.length)[-1]
-  id_l = alignment.title.find('|')
-  id_r = alignment.title.find('|',id_l+1)
+  id_l = alignment.title.find(id_spliter)
+  id_r = alignment.title.find(id_spliter,id_l+1)
   id = alignment.title[id_l+1:id_r]
   sbjct_gene = genome_records[id].seq
   #print id
@@ -220,16 +223,17 @@ def run():
   input = "%s/" %(extension)
   print input
   f = file_names(input)
-  print f
-  create_db(input,f)
+  #create_db(input,f)
   #create_blast(input,f)
-  #[a,b] = parse_blast(f)
+  [a,b] = parse_blast(f)
   print("---END---")
   #print "%s: #DNA muts = %d, #AA muts = %d" %(ref_gene_name,a,b)
+
 
 counter = 0
 species = "Mycobacterium_tuberculosis"
 #"Mycobacterium_tuberculosis"
 ref_gene_name = "Rv0001"
 extension = "ffn"
+id_spliter = ' ' #'|' if fna
 run()
