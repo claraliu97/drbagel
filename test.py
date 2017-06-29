@@ -128,7 +128,10 @@ def parse_single_blast(result_handle,ref_gene,genome_records,txt):
 
   mismatch_g = []
   match_g = ''
+  dash_count_g = 0
   for n in range(len(query)):
+    if sbjct[n] == '-':
+      dash_count_g += 1
     if query[n]!=sbjct[n]:
       match_g += ' '
       mismatch_g += [(n+1,query[n],sbjct[n])]
@@ -154,7 +157,10 @@ def parse_single_blast(result_handle,ref_gene,genome_records,txt):
     lst = align.split('\n')
     match_p = ''
     mismatch_p = []
+    dash_count_p = 0
     for n in range(len(lst[0])):
+      if lst[2][n] == '-':
+        dash_count_p += 1
       if lst[0][n] == lst[2][n]:
         match_p += '|'
       else:
@@ -169,11 +175,11 @@ def parse_single_blast(result_handle,ref_gene,genome_records,txt):
 
       text_file.write(' \n')
 
-    return [len(mismatch_g),len(mismatch_p)]
+    return [len(mismatch_g),dash_count_g,len(mismatch_p),dash_count_p]
 
   except:
     open(txt,"a").write("Invalid DNA seq. Fail to translate\n \n")
-    return [0,0]
+    return [0,0,0,0]
 
 
 def print_parsed_blast(lst,text_file):
@@ -202,7 +208,7 @@ def parse_blast(file_list):
   with open(output_name, "w") as f:
     f.write("%s %s\n" %(species, ref_gene_name))
 
-  mut_sum = [0,0]
+  mut_sum = [0,0,0,0]
 
   for file_name in file_list:
     if "DS" in file_name:
@@ -212,9 +218,11 @@ def parse_blast(file_list):
     #print records["JLSA01000036"]
     result_handle = open("blast_%s/%s/%s.xml" %(extension,ref_gene_name,genome))
 
-    [g,p] = parse_single_blast(result_handle,ref_gene,genome_records,output_name)
+    [g,dg,p,dp] = parse_single_blast(result_handle,ref_gene,genome_records,output_name)
     mut_sum[0] += g
-    mut_sum[1] += p
+    mut_sum[1] += dg
+    mut_sum[2] += p
+    mut_sum[3] += dp
 
   return mut_sum
 
@@ -225,9 +233,9 @@ def run():
   f = file_names(input)
   #create_db(input,f)
   #create_blast(input,f)
-  [a,b] = parse_blast(f)
+  [a,b,c,d] = parse_blast(f)
   print("---END---")
-  #print "%s: #DNA muts = %d, #AA muts = %d" %(ref_gene_name,a,b)
+  print "%s: #DNA muts = %d(del = %d), #AA muts = %d(del = %d)" %(ref_gene_name,a,b,c,d)
 
 
 counter = 0
