@@ -124,7 +124,7 @@ def parse_single_blast(result_handle,ref_gene,genome_records,txt):
 
   query = (ref_gene[:hsp.query_start-1] + query + ref_gene[hsp.query_end:]).upper()
 
-  print (id,len(query),len(sbjct),counter)
+ # print (id,len(query),len(sbjct),counter)
 
   mismatch_g = []
   match_g = ''
@@ -221,7 +221,7 @@ def parse_blast(file_list):
 def run():
   os.chdir(species)
   input = "%s/" %(extension)
-  print input
+  #print input
   f = file_names(input)
   #create_db(input,f)
   #create_blast(input,f)

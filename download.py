@@ -28,7 +28,7 @@ if not os.path.exists(output):
 
 counter = 1
 for filename in site.nlst():
-  fhandle = open(output+filename+"."+extension, 'wb')
+  fhandle = open(output+filename+extension, 'wb')
   print str(counter) + ': Getting ' + filename #for confort sake, shows the file that's being retrieved
   try:
     site.retrbinary('RETR ' + filename+'/'+filename+".PATRIC"+extension, fhandle.write)
