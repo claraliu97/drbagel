@@ -7,8 +7,10 @@ from Bio import SeqIO
 from Bio import pairwise2
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
+from parameters import *
 import os
 
+counter = 0
 #return all the name of files in the given dir
 def file_names(dir):
   f = []
@@ -43,7 +45,7 @@ def create_db(input_dir,file_list):
   os.system("rm -r temp")
 
 
-def create_blast(input_dir,file_list):
+def create_blast(input_dir,file_list,ref_gene_name):
   outdir = "blast_%s/%s/" %(extension,ref_gene_name)
   makemydir(outdir)
   for file_name in file_list:
@@ -61,8 +63,11 @@ def create_blast(input_dir,file_list):
     os.system("sh temp/test.sh")
   os.system("rm -r temp")
 
-def parse_single_blast2(result_handle,ref_gene,txt):
-  pass
+def dash_at_beginning(str):
+  if (len(str)==0 or str[0]!='-'):
+    return 0
+  else:
+    return dash_at_beginning(str[1:])+1
 
 def parse_single_blast(result_handle,ref_gene,genome_records,txt):
   global counter
@@ -128,10 +133,8 @@ def parse_single_blast(result_handle,ref_gene,genome_records,txt):
 
   mismatch_g = []
   match_g = ''
-  dash_count_g = 0
+  dash_count_g = dash_at_beginning(sbjct)
   for n in range(len(query)):
-    if sbjct[n] == '-':
-      dash_count_g += 1
     if query[n]!=sbjct[n]:
       match_g += ' '
       mismatch_g += [(n+1,query[n],sbjct[n])]
@@ -157,10 +160,8 @@ def parse_single_blast(result_handle,ref_gene,genome_records,txt):
     lst = align.split('\n')
     match_p = ''
     mismatch_p = []
-    dash_count_p = 0
+    dash_count_p = dash_at_beginning(lst[2])
     for n in range(len(lst[0])):
-      if lst[2][n] == '-':
-        dash_count_p += 1
       if lst[0][n] == lst[2][n]:
         match_p += '|'
       else:
@@ -188,8 +189,8 @@ def print_parsed_blast(lst,text_file):
   sbjct = lst[2]
   mismatch = lst[3]
 
-  for (n,q,s) in mismatch:
-    text_file.write('%d: %s->%s\n' %(n,q,s))
+  #for (n,q,s) in mismatch:
+    #text_file.write('%d: %s->%s\n' %(n,q,s))
 
   if len(mismatch)>0:
     n = 0
@@ -200,8 +201,9 @@ def print_parsed_blast(lst,text_file):
       n += 75
 
 
-def parse_blast(file_list):
+def parse_blast(file_list,ref_gene_name):
   #E_VALUE_THRESH = 0.001
+  global counter
   ref_gene = SeqIO.read('ref_genes/%s.fasta' %ref_gene_name,"fasta",IUPAC.unambiguous_dna)
 
   output_name = "blast_%s/%s.txt" %(extension,ref_gene_name)
@@ -210,6 +212,7 @@ def parse_blast(file_list):
 
   mut_sum = [0,0,0,0]
 
+  counter = 0
   for file_name in file_list:
     if "DS" in file_name:
       continue
@@ -225,23 +228,3 @@ def parse_blast(file_list):
     mut_sum[3] += dp
 
   return mut_sum
-
-def run():
-  os.chdir(species)
-  input = "%s/" %(extension)
-  #print input
-  f = file_names(input)
-  #create_db(input,f)
-  #create_blast(input,f)
-  [a,b,c,d] = parse_blast(f)
-  print("---END---")
-  print "%s: #DNA muts = %d(del = %d), #AA muts = %d(del = %d)" %(ref_gene_name,a,b,c,d)
-
-
-counter = 0
-species = "Mycobacterium_tuberculosis"
-#"Mycobacterium_tuberculosis"
-ref_gene_name = "Rv0001"
-extension = "ffn"
-id_spliter = ' ' #'|' if fna
-run()
