@@ -27,6 +27,7 @@ def makemydir(dir):
 
 def create_db(input_dir,file_list):
   makemydir("db_%s/" %extension)
+  #os.system("mkdir -p temp")
   for file_name in file_list:
     if "DS" in file_name:
       continue
@@ -37,16 +38,20 @@ def create_db(input_dir,file_list):
     make_db = "makeblastdb -in %s%s.%s -dbtype nucl \
     -out db_%s/%s/%s -title '%s'\n" %(input_dir,genome,extension,extension,genome,genome,genome)
 
-    os.system("mkdir -p temp")
-    with open("temp/test.sh", "w") as text_file:
-      text_file.write(make_db)
+    
+    #with open("temp/test.sh", "w") as text_file:
+      #windows
+      #text_file.write("#!/bin/sh\n")
+      #text_file.write(make_db)
 
-    os.system("sh temp/test.sh")
-  os.system("rm -r temp")
+    os.system(make_db)
+    #os.system("sh temp/test.sh")
+  #os.system("rm -r temp")
 
 
 def create_blast(input_dir,file_list,ref_gene_name):
   outdir = "blast_%s/%s/" %(extension,ref_gene_name)
+  #os.system("mkdir -p temp")
   makemydir(outdir)
   for file_name in file_list:
     if "DS" in file_name:
@@ -55,13 +60,15 @@ def create_blast(input_dir,file_list,ref_gene_name):
 
     make_blast = "blastn -query ref_genes/%s.fasta -task megablast -db db_%s/%s/%s \
     -outfmt 5 -out %s%s.xml -num_threads 4" %(ref_gene_name,extension,genome,genome,outdir,genome)
+    
+    #with open("temp/test.sh", "w") as text_file:
+      #text_file.write(make_blast)
 
-    os.system("mkdir -p temp")
-    with open("temp/test.sh", "w") as text_file:
-      text_file.write(make_blast)
-
-    os.system("sh temp/test.sh")
-  os.system("rm -r temp")
+    #windows:
+    os.system(make_blast)
+    #macos:
+    #os.system("sh temp/test.sh")
+  #os.system("rm -r temp")
 
 def dash_at_beginning(str):
   if (len(str)==0 or str[0]!='-'):
