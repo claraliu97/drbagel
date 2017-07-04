@@ -64,10 +64,12 @@ def create_blast(input_dir,file_list,ref_gene_name):
   os.system("rm -r temp")
 
 def dash_at_beginning(str):
-  if (len(str)==0 or str[0]!='-'):
+  if (len(str)==0 or str[0]!='-' or str[-1]!='-'):
     return 0
-  else:
+  else if(str[0]=='-'):
     return dash_at_beginning(str[1:])+1
+  else:
+    return dash_at_beginning(str[:-1])+1
 
 def parse_single_blast(result_handle,ref_gene,genome_records,txt):
   global counter
@@ -211,6 +213,7 @@ def parse_blast(file_list,ref_gene_name):
     f.write("%s %s\n" %(species, ref_gene_name))
 
   mut_sum = [0,0,0,0]
+  #seq_cum = [[0]*len(ref_gene)]*5 #A,T,G,C
 
   counter = 0
   for file_name in file_list:
