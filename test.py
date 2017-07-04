@@ -19,6 +19,14 @@ def file_names(dir):
     break
   return f
 
+def folder_names(dir):
+  f = []
+  for (dirpath, dirnames, filenames) in os.walk(dir):
+    f.extend(dirnames)
+    break
+  return f
+
+
 def makemydir(dir):
   try:
     os.makedirs(dir)
