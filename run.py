@@ -40,11 +40,12 @@ def blast_and_parse():
   for ref_gene in ref_gene_files:
     ref_gene_name = ref_gene[:-6]
     #create_blast(input,f,ref_gene_name)
-    [a,b,c,d] = parse_blast(f,ref_gene_name)
-    summary = "%s: #DNA muts = %d(invalid = %d), #AA muts = %d(invalid = %d)" %(ref_gene_name,a-b,b,c-d,d)
-    print summary
-    with open("result.txt", "a") as text_file:
-        text_file.write(summary+"\n")
+    #[a,b,c,d] = parse_blast(f,ref_gene_name)
+    write_seq(f,ref_gene_name)
+    #summary = "%s: #DNA muts = %d(invalid = %d), #AA muts = %d(invalid = %d)" %(ref_gene_name,a-b,b,c-d,d)
+    #print summary
+    #with open("result.txt", "a") as text_file:
+        #text_file.write(summary+"\n")
   print("---END---")
 
 def count_all_invalid():
