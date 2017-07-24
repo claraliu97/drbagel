@@ -16,6 +16,8 @@ import sys, os
 species = 'Mycobacterium_tuberculosis'
 extension = '.ffn'
 
+species = 'Klebsiella_pneumoniae'
+
 site = FTP("ftp.patricbrc.org")
 site.login()
 #site.cwd('/patric2/current_release/ec/')
