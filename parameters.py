@@ -8,9 +8,13 @@ extension = "ffn"
 id_spliter = ' ' #'|' if fna, ' ' if ffn
 """
 
-species = "Klebsiella_pneumoniae"
-extension = "ffn"
-id_spliter = ' ' #'|' if fna
+current_os = 'MAC' # WIN or MAC
 
-write_all_gene = True
-write_all_protein = False
+species = "Klebsiella_pneumoniae"
+species = "Test"
+extension = "fna"
+id_spliter = ' '
+
+db = False
+blast = False
+write_individual_fasta = True

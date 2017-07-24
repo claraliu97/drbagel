@@ -1,7 +1,7 @@
 #Run the blast script
 #Clara Liu
 #2017/06/30
-from test import *
+from drbagel import *
 from parameters import *
 import os
 
@@ -37,9 +37,9 @@ ref_gene_files = new_ref
 #create_blast(input,['1262525.3.ffn'],'Rv0001')
 
 def blast_and_parse():
+  #create_db(input,f)
   for ref_gene in ref_gene_files:
     ref_gene_name = ref_gene[:-6]
-    #create_db(input,f)
     create_blast(input,f,ref_gene_name)
     #[a,b,c,d] = parse_blast(f,ref_gene_name)
     #write_seq(f,ref_gene_name)
@@ -79,4 +79,26 @@ def rename(dir,old_ext,new_ext):
 #combine_parse()
 #rename("fasta/",".txt",".fasta")
 #rename("ref_genes/",".txt",".fasta")
-blast_and_parse()
+
+if db:
+  if current_os == 'WIN':
+    create_db_win(input,f)
+  if current_os == 'MAC':
+    create_db_mac(input,f)
+  else:
+    print 'Error from Clara: Invalid OS'
+
+if blast:
+  for ref_gene in ref_gene_files:
+    ref_gene_name = ref_gene[:-6]
+    if current_os == 'WIN':
+      create_blast_win(input,f,ref_gene_name)
+    if current_os == 'MAC':
+      create_blast_mac(input,f,ref_gene_name)
+    else:
+      print 'Error from Clara: Invalid OS'
+
+if write_individual_fasta:
+  for ref_gene in ref_gene_files:
+    ref_gene_name = ref_gene[:-6]
+    write_seq(f,ref_gene_name)

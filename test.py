@@ -128,8 +128,8 @@ def onlyinvalid(str):
   return True
 
 class Blasted:
-  def __init__(self,result_handle,ref_gene):
-    self.ref_gene = ref_gene.seq
+  def __init__(self,result_handle,ref_gene_name):
+    self.ref_gene_name = ref_gene_name
     self.valid = True
     [s,q,l,r,t] = process_result_handle(result_handle,ref_gene)
     #complete sbjct sequence (no dashes added even if incomplete)
@@ -199,11 +199,6 @@ class Blasted:
         sbjct_right_e = hsp.sbjct_start-len_downstream
         sbjct_right = (sbjct_gene)[sbjct_right_e-1:sbjct_right_s-1].reverse_complement().upper()
 
-      if len(sbjct_left)<len_upstream:
-        sbjct_left = '-'*(len_upstream-len(sbjct_left))+sbjct_left
-      if len(sbjct_right)<len_downstream:
-        sbjct_right = sbjct_right+'-'*(len_downstream-len(sbjct_right))
-
       sbjct = sbjct_left+hsp.sbjct.upper()+sbjct_right
 
       query = (ref_gene[:hsp.query_start-1] + query + ref_gene[hsp.query_end:]).upper()
@@ -213,12 +208,26 @@ class Blasted:
     except IndexError:
       return ['','',0,0,'']
 
+  def get_ref_gene(self):
+    return SeqIO.read('ref_genes/%s.fasta' %self.ref_gene_name,"fasta",IUPAC.unambiguous_dna)
+
   def get_ref_protein(self):
-    return ref_gene.translate(to_stop=True)
+    return get_ref_gene(self).translate(to_stop=True)
 
   def get_title(self):
     return title
 
+  def get_seq(self):
+    return ''.join(sbjct.split('-'))
+
+  def get_print_seq(self):
+    return '-'*lelf_miss + sbjct + '-'*right_miss
+
+  def get_protein(self):
+    try:
+      return str(Seq(get_seq(self), IUPAC.unambiguous_dna).translate(to_stop=True))
+    except Bio.Data.CodonTable.TranslationError:
+      return ''
 
 def parse_single_blast(result_handle,ref_gene,genome_records,txt):
 
@@ -369,7 +378,9 @@ def write_single_seq(blasted,genome_records,txt):
 
   ref_protein = blasted.get_ref_protein()
   sbjct = blasted.get_sbjct()
+  query = blasted.get_seq
   title = blasted.get_title()
+  if query!=''
     with open("DNA_"+txt, "w") as text_file:
       text_file.write('>%s\n' %title)
       n = 0

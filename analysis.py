@@ -5,7 +5,7 @@
 import Bio
 from Bio import SeqIO
 from Bio.Alphabet import IUPAC
-from test import *
+from drbagel import *
 import os
 from shutil import copyfile
 
