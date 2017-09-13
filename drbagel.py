@@ -37,8 +37,18 @@ def makemydir(dir):
   except OSError:
     pass
 
+def rename(dir,old_ext,new_ext):
+  f = []
+  for (dirpath, dirnames, filenames) in os.walk(dir):
+    f.extend(filenames)
+    break
+  for file_name in f:
+    if file_name[-len(old_ext):]==old_ext:
+      file = dir+"/"+file_name
+      base = os.path.splitext(file)[0]
+      os.rename(file, base.lower() + new_ext)
 
-def create_db_mac(input_dir,file_list):
+def create_db_win(input_dir,file_list):
   makemydir("db_%s/" %extension)
   makemydir("temp/")
 
@@ -50,13 +60,14 @@ def create_db_mac(input_dir,file_list):
     make_db = "makeblastdb -in %s%s.%s -dbtype nucl \
     -out db_%s/%s/%s -title '%s'\n" %(input_dir,genome,extension,extension,genome,genome,genome)
 
-    with open("temp/test.sh", "w") as text_file:
-      text_file.write(make_db)
+    #with open("temp/test.sh", "w") as text_file:
+      #text_file.write(make_db)
 
-    os.system("sh temp/test.sh")
-  os.system("rm -r temp/test.sh")
+    os.system("sh %s" %make_db)
+    #os.system("sh temp/test.sh")
+  #os.system("rm -r temp/test.sh")
 
-def create_db_win(input_dir,file_list):
+def create_db_mac(input_dir,file_list):
   makemydir("db_%s/" %extension)
 
   for file_name in file_list:
@@ -70,13 +81,13 @@ def create_db_win(input_dir,file_list):
     os.system(make_db)
 
 
-def create_blast_mac(input_dir,file_list,ref_gene_name):
+def create_blast_win(input_dir,file_list,ref_gene_name):
   counter = 0
   if len(file_list)/100>0:
     num_d_100 = len(file_list)/100
   else:
     num_d_100 = 1
-  print ref_gene_name
+  #print ref_gene_name
 
   outdir = "blast_%s/%s/" %(extension,ref_gene_name)
   makemydir(outdir)
@@ -99,7 +110,7 @@ def create_blast_mac(input_dir,file_list,ref_gene_name):
     os.system("sh temp/test.sh")
   os.system("rm -r temp")
 
-def create_blast_win(input_dir,file_list,ref_gene_name):
+def create_blast_mac(input_dir,file_list,ref_gene_name):
   counter = 0
   if len(file_list)/100>0:
     num_d_100 = len(file_list)/100
@@ -193,20 +204,46 @@ class Blasted:
 
 
 
-  def __init__(self,genome,ref_gene_name):
+  def __init__(self,genome,ref_gene_name,option):
     self.ref_gene_name = ref_gene_name
     self.genome = genome
-    self.valid = True
-    [s,q,l,r,t] = process_result_handle(genome,ref_gene_name)
-    #complete sbjct sequence (no dashes added even if incomplete)
-    self.sbjct = s
-    #complete query sequence with possible dash in the middle
-    self.query = q
-    self.title = t
-    self.left_miss = l
-    self.right_miss = r
-    if q == '':
-      self.valid = False
+    self.left_miss = 0
+    self.right_miss = 0
+    self.sbjct = ''
+    if option=='xml':
+      [s,q,l,r,t] = process_result_handle(genome,ref_gene_name)
+      #complete sbjct sequence (no dashes added even if incomplete)
+      self.sbjct = s
+      #complete query sequence with possible dash in the middle
+      #self.query = q
+      self.title = t
+      self.left_miss = l
+      self.right_miss = r
+    elif option=='fasta':
+      txt = 'output_seq/%s/%s' %(ref_gene_name,genome)
+      file = open(txt)
+      str_file = file.read()
+      newline = str_file.find('\r\n')
+      self.title = str_file[str_file.find('>')+1:newline]
+      str_seq = ''
+      newline += 2
+      while str_file.find('\r\n',newline)>=0:
+        r = str_file.find('\r\n',newline)
+        str_seq += str_file[newline:r]
+        newline = r+2
+      self.sbjct = str_seq.upper()
+      l = 0
+      while(self.sbjct[l]=='-'):
+        l += 1
+      r = len(self.sbjct)-1
+      while(self.sbjct[r]=='-'):
+        r -= 1
+      self.left_miss = l
+      self.right_miss = len(self.sbjct)-1-r
+
+  def validify(self):
+    if self.sbjct == '':
+      return False
 
   def get_ref_gene(self):
     return SeqIO.read('ref_genes/%s.fasta' %self.ref_gene_name,"fasta",IUPAC.unambiguous_dna)
@@ -235,6 +272,8 @@ class Blasted:
   def write_single_seq(self):
     dir = 'output_seq/%s/' %(self.ref_gene_name)
     txt = '%s.fasta' %(self.genome)
+    blast_error = []
+    translate_error = []
 
     protein = self.get_protein()
     sbjct = self.get_print_seq()
@@ -245,6 +284,8 @@ class Blasted:
         while n<len(sbjct):
           text_file.write(sbjct[n:n+100]+'\n')
           n += 100
+    else:
+      blast_error += [self.genome]
 
     protein = self.get_protein()
 
@@ -255,7 +296,13 @@ class Blasted:
         while n<len(protein):
           text_file.write(protein[n:n+100]+'\n')
           n += 100
+    else:
+      translate_error += [self.genome]
 
+    return [blast_error,translate_error]
+
+  def attach_exact_alignment(self,txt):
+    pass
 
 def write_seq(file_list,ref_gene_name):
   counter = 0
@@ -268,7 +315,7 @@ def write_seq(file_list,ref_gene_name):
   makemydir('output_seq/%s/DNA/' %ref_gene_name)
   makemydir('output_seq/%s/AA/' %ref_gene_name)
 
-  print '%s:' %ref_gene_name
+  #print '%s:' %ref_gene_name
   for file_name in file_list:
     if "DS" in file_name:
       continue
@@ -278,5 +325,17 @@ def write_seq(file_list,ref_gene_name):
     counter += 1
 
     genome = file_name[:file_name.find('.'+extension)]
-    blasted = Blasted(genome,ref_gene_name)
-    blasted.write_single_seq()
+    blasted = Blasted(genome,ref_gene_name,'xml')
+    [bE,tE] = blasted.write_single_seq()
+    if len(bE)!=0 or len(tE)!=0:
+      with open('output_seq/%s/error_seqs.txt' %ref_gene_name,'a') as txt:
+        txt.write('Seqs not writen for %s: \n' %ref_gene_name)
+        txt.write('BLAST error (no alignment):\n')
+        for item in bE:
+          txt.write(item+'\n')
+        txt.write('Translation error: \n')
+        for item in tE:
+          txt.write(item+'\n')
+
+def setup(species):
+  makemydir(species)

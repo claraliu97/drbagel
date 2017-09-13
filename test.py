@@ -641,6 +641,7 @@ def parse_blast(file_list,ref_gene_name):
   #except:
     #print "fail at %s" %file_name
 
+
 def count_invalid(file_list,ref_gene_name):
   #E_VALUE_THRESH = 0.001
   global counter

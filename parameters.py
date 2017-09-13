@@ -2,19 +2,20 @@
 #Clara Liu
 #2017/06/30
 
-"""
-species = "Mycobacterium_tuberculosis"
-extension = "ffn"
-id_spliter = ' ' #'|' if fna, ' ' if ffn
-"""
+
+#species = "Mycobacterium_tuberculosis"
+species = 'Test'
+#extension = "ffn"
+#id_spliter = ' ' #'|' if fna, ' ' if ffn
+
 
 current_os = 'MAC' # WIN or MAC
+option = 'txt'
 
-species = "Klebsiella_pneumoniae"
-species = "Test"
-extension = "fna"
+#of genome files
+extension = "fasta"
 id_spliter = ' '
 
-db = False
-blast = False
+db = True
+blast = True
 write_individual_fasta = True

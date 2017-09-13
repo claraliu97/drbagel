@@ -6,9 +6,6 @@ from parameters import *
 import os
 
 
-os.chdir(species)
-input = "%s/" %(extension)
-f = file_names(input)
 """
 exist = folder_names("db_ffn/")
 new_f = []
@@ -19,10 +16,7 @@ f = new_f
 """
 
 #create_db(input,f)
-ref_gene_files = file_names("ref_genes/")
-with open("result.txt", "w") as text_file:
-  text_file.write('****Result****\n')
-  text_file.write('Reference gene name | Invalid | Valid')
+
 
 """
 new_ref = []
@@ -47,14 +41,15 @@ def blast_and_parse():
     #print summary
     #with open("result.txt", "a") as text_file:
         #text_file.write(summary+"\n")
-  print("---END---")
+
+  ("---END---")
 
 def count_all_invalid():
   for ref_gene in ref_gene_files:
     ref_gene_name = ref_gene[:-6]
     inv = count_invalid(f,ref_gene_name)
     summary = "%s %d %d" %(ref_gene_name,inv,7311-inv)
-    print summary
+    #print summary
     with open("result.txt", "a") as text_file:
         text_file.write(summary+"\n")
   print("---END---")
@@ -65,40 +60,52 @@ def combine_parse():
     combine_parse_blast(f,ref_gene_name)
   print("---END---")
 
-def rename(dir,old_ext,new_ext):
+
+def rename_outputs():
+  curdir = os.getcwd()
+  ref_genes = file_names(curdir+'/ref_genes/')
   f = []
-  for (dirpath, dirnames, filenames) in os.walk(dir):
-    f.extend(filenames)
-    break
-  for file_name in f:
-    if file_name[-len(old_ext):]==old_ext:
-      file = dir+"/"+file_name
-      base = os.path.splitext(file)[0]
-      os.rename(file, base.lower() + new_ext)
+  for r in ref_genes:
+    f += [r[:-6]]
+  print f
+  for ref_gene in f:
+    rename(curdir+'/output_seq/%s/AA' %(ref_gene),'.txt','.fasta')
+    rename(curdir+'/output_seq/%s/DNA' %(ref_gene),'.txt','.fasta')
 
 #combine_parse()
 #rename("fasta/",".txt",".fasta")
 #rename("ref_genes/",".txt",".fasta")
 
-if db:
-  if current_os == 'WIN':
-    create_db_win(input,f)
-  if current_os == 'MAC':
-    create_db_mac(input,f)
-  else:
-    print 'Error from Clara: Invalid OS'
+def run():
+  os.chdir(species)
+  input = "%s/" %(extension)
+  f = file_names(input)
+  ref_gene_files = file_names("ref_genes/")
+  with open("result.txt", "w") as text_file:
+    text_file.write('****Result****\n')
+    text_file.write('Reference gene name | Invalid | Valid')
 
-if blast:
-  for ref_gene in ref_gene_files:
-    ref_gene_name = ref_gene[:-6]
+  if db:
     if current_os == 'WIN':
-      create_blast_win(input,f,ref_gene_name)
-    if current_os == 'MAC':
-      create_blast_mac(input,f,ref_gene_name)
+      create_db_win(input,f)
+    elif current_os == 'MAC':
+      create_db_mac(input,f)
     else:
       print 'Error from Clara: Invalid OS'
 
-if write_individual_fasta:
-  for ref_gene in ref_gene_files:
-    ref_gene_name = ref_gene[:-6]
-    write_seq(f,ref_gene_name)
+  if blast:
+    for ref_gene in ref_gene_files:
+      ref_gene_name = ref_gene[:-6]
+      if current_os == 'WIN':
+        create_blast_win(input,f,ref_gene_name)
+      elif current_os == 'MAC':
+        create_blast_mac(input,f,ref_gene_name)
+      else:
+        print 'Error from Clara: Invalid OS'
+
+  if write_individual_fasta:
+    for ref_gene in ref_gene_files:
+      ref_gene_name = ref_gene[:-6]
+      write_seq(f,ref_gene_name)
+
+#rename_outputs()

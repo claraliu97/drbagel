@@ -8,11 +8,15 @@ from Bio.Alphabet import IUPAC
 from drbagel import *
 import os
 from shutil import copyfile
+import parameters
+from run import run
 
 
 INCOMPLETE_CUTOFF = 0
 
 def incomplete(seq):
+  if len(seq)==0:
+    return 0
   l = 0
   r = len(seq)-1
   while (seq[l]=='-' or seq[r]=='-'):
@@ -35,21 +39,29 @@ class BlastedSeq:
 def txt_to_seq(txt):
   file = open(txt)
   str_file = file.read()
-  newline = str_file.find('\r\n')
+  sep = ''
+  if txt[-4:] == '.txt':
+    sep = '\r\n'
+  elif txt[-6:] == '.fasta':
+    sep = '\n'
+  else:
+    raise ValueError
+  newline = str_file.find(sep)
   id = str_file[str_file.find('>')+1:newline]
   str_seq = ''
-  newline += 2
-  while str_file.find('\r\n',newline)>=0:
-    r = str_file.find('\r\n',newline)
+  newline += len(sep)
+  while str_file.find(sep,newline)>=0:
+    r = str_file.find(sep,newline)
     str_seq += str_file[newline:r]
-    newline = r+2
+    newline = r+len(sep)
 
   #seq = SeqIO.read(str_seq,"fasta",IUPAC.unambiguous_dna)
   seq = Bio.Seq.Seq(str_seq,IUPAC.unambiguous_dna)
 
   genome_name = txt[txt.rfind('/')+1:txt.rfind('.fasta')]
 
-  bSeq = BlastedSeq(seq,id,genome_name)
+
+  bSeq = BlastedSeq(str_seq,id,genome_name)
 
   return bSeq
 
@@ -108,19 +120,19 @@ def consensus_seq(bseq_names,gene,ref_len):
   return consensus
 
 #two seq has to have the same length, which is divisble by 3
-def count_diff(seq,ref_seq,txt):
+def count_diff(seq_str,ref_seq,txt):
   global identical
-  seq = ''.join(str(seq).split('-'))
+  seq = ''.join(str(seq_str).split('-'))
   prot = Bio.Seq.Seq(seq,IUPAC.unambiguous_dna).translate(to_stop=True)
   ref_prot = Bio.Seq.Seq(str(ref_seq),IUPAC.unambiguous_dna).translate(to_stop=True)
   pointer = 0
   silent = 0
   missense = 0
   aa = 0
-  for pointer in range(len(seq)/3-1):
-    nuc0 = (seq[pointer*3] == ref_seq[pointer*3])
-    nuc1 = (seq[pointer*3+1] == ref_seq[pointer*3+1])
-    nuc2 = (seq[pointer*3+2] == ref_seq[pointer*3+2])
+  for pointer in range(len(seq_str)/3-1):
+    nuc0 = (seq_str[pointer*3] == ref_seq[pointer*3])
+    nuc1 = (seq_str[pointer*3+1] == ref_seq[pointer*3+1])
+    nuc2 = (seq_str[pointer*3+2] == ref_seq[pointer*3+2])
     if pointer >= len(prot):
       continue
     if prot[pointer] == ref_prot[pointer]:
@@ -177,31 +189,33 @@ def only_atgc(str):
   t = str.count('T')+str.count('t')
   g = str.count('G')+str.count('g')
   c = str.count('C')+str.count('c')
-  return len(str)==a+t+g+c
+  dash = str.count('-')
+  return len(str)==a+t+g+c+dash
 
 def qc(bseq_names,ref_gene):
-  #cwd = os.getcwd()
-  output_seq_dir = 'Mycobacterium_tuberculosis/output_seq/%s/' %ref_gene
-  ref_gene_seq = str(SeqIO.read(('Mycobacterium_tuberculosis/ref_genes/%s.fasta' %ref_gene),"fasta",IUPAC.unambiguous_dna).seq.upper())
+  d = os.getcwd()
+  output_seq_dir = '%s/output_seq/%s/DNA/' %(parameters.species,ref_gene)
+  ref_gene_seq = str(SeqIO.read(('%s/ref_genes/%s.fasta' %(parameters.species,ref_gene)),"fasta",IUPAC.unambiguous_dna).seq.upper())
   #makemydir('Insertion/')
   #os.chdir(output_seq_dir)
-  qc_dir = 'Mycobacterium_tuberculosis/QC_seq/%s/' %ref_gene
+  qc_dir = '%s/QC_seq/%s/' %(parameters.species,ref_gene)
   makemydir(qc_dir)
   for txt in bseq_names:
     bSeq = txt_to_seq(output_seq_dir+txt)
     if only_atgc(bSeq.seq) and bSeq.id!='No alignment':
       if bSeq.complete:
         if len(bSeq.seq)==len(ref_gene_seq):
-          copyfile('%s%s.fasta' %(output_seq_dir,bSeq.gn), '%s%s.fasta' %(qc_dir,bSeq.gn))
+          copyfile(output_seq_dir+txt, qc_dir+txt)
+          #copyfile('%s%s.fasta' %(output_seq_dir,bSeq.gn), '%s%s.fasta' %(qc_dir,bSeq.gn))
         elif len(bSeq.seq)>len(ref_gene_seq):
-          makemydir('Mycobacterium_tuberculosis/Insertion/%s/' %ref_gene)
-          copyfile('%s%s.fasta' %(output_seq_dir,bSeq.gn), 'Mycobacterium_tuberculosis/Insertion/%s/%s.fasta' %(ref_gene,bSeq.gn))
+          makemydir('%s/Insertion/%s/' %(parameters.species,ref_gene))
+          copyfile('%s%s.fasta' %(output_seq_dir,bSeq.gn), '%s/Insertion/%s/%s.fasta' %(parameters.species,ref_gene,bSeq.gn))
 
   #os.chdir(cwd)
 
 def run_count_diff(bseq_names,ref_gene):
-  ref_gene_seq = str(SeqIO.read(('Mycobacterium_tuberculosis/ref_genes/%s.fasta' %ref_gene),"fasta",IUPAC.unambiguous_dna).seq.upper())
-  seq_dir = 'Mycobacterium_tuberculosis/QC_seq/%s/' %ref_gene
+  ref_gene_seq = str(SeqIO.read(('%s/ref_genes/%s.fasta' %(parameters.species,ref_gene)),"fasta",IUPAC.unambiguous_dna).seq.upper())
+  seq_dir = '%s/QC_seq/%s/' %(parameters.species,ref_gene)
   silent = 0
   missense = 0
   aa = 0
@@ -212,6 +226,18 @@ def run_count_diff(bseq_names,ref_gene):
     missense += m
     aa += a
   return [len(bseq_names),len(ref_gene_seq),silent,missense,aa]
+
+def run_count_seq(bseq_names,ref_gene,seqs):
+  ref_gene_seq = str(SeqIO.read(('Mycobacterium_tuberculosis/ref_genes/%s.fasta' %ref_gene),"fasta",IUPAC.unambiguous_dna).seq.upper())
+  seq_dir = 'Mycobacterium_tuberculosis/Insertion/%s/' %ref_gene
+  count = [0]*len(seqs)
+  for txt in bseq_names:
+    bseq = txt_to_seq(seq_dir+txt)
+    for n in range(len(seqs)):
+      if seqs[n] in bseq.seq:
+        count[n] += 1
+  for n in range(len(seqs)):
+    print '%s: %d/%d' %(seqs[n],count[n],len(bseq_names))
 
 def run_count_diff2(bseq_names,ref_gene):
   ref_gene_seq = str(SeqIO.read(('Mycobacterium_tuberculosis/ref_genes/%s.fasta' %ref_gene),"fasta",IUPAC.unambiguous_dna).seq.upper())
@@ -225,17 +251,31 @@ def run_count_diff2(bseq_names,ref_gene):
   return dna
 
 
-g = file_names('Mycobacterium_tuberculosis/ref_genes')
+curdir = os.getcwd()
+run()
+os.chdir(curdir)
+g = file_names('%s/ref_genes/' %parameters.species)
 genes = []
 for gene in g:
   genes += [gene[:-6]]
-with open('Mycobacterium_tuberculosis/count.txt','w') as txt:
+#os.chdir(os.getcwd()[:os.getcwd().rfind('/')])
+with open('%s/count.txt' %parameters.species,'a') as txt:
   txt.write('Counts\nGene Name | Gene Length | Silent | Missense | AA\n')
 for gene in genes:
-  bseq_names = file_names('Mycobacterium_tuberculosis/QC_seq/%s/' %gene)
+  #rename('Mycobacterium_tuberculosis/output_seq/%s/' %gene,'.txt','.fasta')
+  txt_names = file_names('%s/output_seq/%s/DNA/' %(parameters.species,gene))
+  qc(txt_names,gene)
+  bseq_names = file_names('%s/QC_seq/%s/' %(parameters.species,gene))
   [n,l,s,m,a] = run_count_diff(bseq_names,gene)
   #dna = run_count_diff2(bseq_names,gene)
-  with open('Mycobacterium_tuberculosis/count.txt','a') as txt:
+  with open('%s/count.txt' %parameters.species,'a') as txt:
     txt.write('%s %d %d %d %d %d\n' %(gene,n,l,s,m,a))
   print '%s: n= %d len= %d silent= %d missense= %d aa= %d' %(gene,n,l,s,m,a)
  # print '%s %d' %(gene,dna)
+
+"""
+gene = 'Rv0050'
+bseq_names = file_names('Mycobacterium_tuberculosis/Insertion/%s/' %gene)
+seqs = ['GCCGCCTCCGCCGCCGCCGTCGG','CGCCGCCGCCGTCGGAGG','GCCGCCGCCGTCGGAGGT','CCGCCGCCGTCGGAGGTACCAC','GCCGCCGCCGTCGGAGGTAC']
+run_count_seq(bseq_names,gene,seqs)
+"""
