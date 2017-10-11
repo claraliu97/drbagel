@@ -10,6 +10,7 @@ import os
 from shutil import copyfile
 import parameters
 from run import run
+import xlsxwriter
 
 
 INCOMPLETE_CUTOFF = 0
@@ -208,8 +209,13 @@ def qc(bseq_names,ref_gene):
           copyfile(output_seq_dir+txt, qc_dir+txt)
           #copyfile('%s%s.fasta' %(output_seq_dir,bSeq.gn), '%s%s.fasta' %(qc_dir,bSeq.gn))
         elif len(bSeq.seq)>len(ref_gene_seq):
+          with open('%s/RESULT/%s_not_in_result.txt' %(parameters.species,ref_gene),'a') as txt:
+            txt.write('Insertion %s\n' %bSeq.gn)
           makemydir('%s/Insertion/%s/' %(parameters.species,ref_gene))
           copyfile('%s%s.fasta' %(output_seq_dir,bSeq.gn), '%s/Insertion/%s/%s.fasta' %(parameters.species,ref_gene,bSeq.gn))
+        else:
+          with open('%s/RESULT/%s_not_in_result.txt' %(parameters.species,ref_gene),'a') as txt:
+            txt.write('Incomplete %s\n' %bSeq.gn)
 
   #os.chdir(cwd)
 
@@ -251,6 +257,54 @@ def run_count_diff2(bseq_names,ref_gene):
   return dna
 
 
+######### Display the mutation at each AA position #########
+
+aa = ['A','B','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y','Z','-']
+
+def count_by_aa(seq_str,ref_seq,txt,aa_dict_lst):
+  seq = ''.join(str(seq_str).split('-'))
+  prot = Bio.Seq.Seq(seq,IUPAC.unambiguous_dna).translate(to_stop=True)
+  ref_prot = Bio.Seq.Seq(str(ref_seq),IUPAC.unambiguous_dna).translate(to_stop=True)
+  alignments = Bio.pairwise2.align.globalxs(ref_prot, prot,-10,-10)
+  ref_aligned = alignments[0][0]
+  prot_aligned = alignments[0][1]
+  if ref_aligned!=ref_prot:
+    if len(ref_aligned)>len(ref_prot):
+      print "WRONG: %s" %txt
+      return aa_dict_lst
+    else:
+      print "SUPER WRONG: %s" %txt
+      return aa_dict_lst
+
+  for pointer in range(len(ref_aligned)):
+    if prot_aligned[pointer] != ref_prot[pointer]:
+      aa_dict_lst[pointer][prot_aligned[pointer]] += 1
+
+  return aa_dict_lst
+
+def run_count_by_aa(bseq_names,ref_gene):
+  ref_gene_seq = str(SeqIO.read(('%s/ref_genes/%s.fasta' %(parameters.species,ref_gene)),"fasta",IUPAC.unambiguous_dna).seq.upper())
+  ref_prot = Bio.Seq.Seq(str(ref_gene_seq),IUPAC.unambiguous_dna).translate(to_stop=True)
+  seq_dir = '%s/QC_seq/%s/' %(parameters.species,ref_gene)
+  aa_dict_lst = [{} for i in ref_prot]
+  for i in range(len(ref_prot)):
+    for j in aa:
+      aa_dict_lst[i][j] = 0
+  for i in range(len(ref_prot)):
+    aa_dict_lst[i][ref_prot[i]] = -1
+  for txt in bseq_names:
+    bseq = txt_to_seq(seq_dir+txt)
+    aa_dict_lst = count_by_aa(bseq.seq,ref_gene_seq,txt,aa_dict_lst)
+  return (ref_prot,aa_dict_lst)
+
+def has_mut(aa_dict):
+  mut = 0
+  for k in aa_dict:
+    if aa_dict[k] != -1:
+      mut += aa_dict[k]
+  return mut>0
+
+
 curdir = os.getcwd()
 run()
 os.chdir(curdir)
@@ -259,19 +313,55 @@ genes = []
 for gene in g:
   genes += [gene[:-6]]
 #os.chdir(os.getcwd()[:os.getcwd().rfind('/')])
-with open('%s/count.txt' %parameters.species,'a') as txt:
-  txt.write('Counts\nGene Name | Gene Length | Silent | Missense | AA\n')
+if True:
+  makemydir('%s/RESULT/' %parameters.species)
+  with open('%s/RESULT/count.txt' %parameters.species,'a') as txt:
+    txt.write('Counts\nGene Name | # of genomes counted | Gene Length | Silent | Missense | AA\n')
+  for gene in genes:
+    #rename('Mycobacterium_tuberculosis/output_seq/%s/' %gene,'.txt','.fasta')
+    txt_names = file_names('%s/output_seq/%s/DNA/' %(parameters.species,gene))
+    qc(txt_names,gene)
+    bseq_names = file_names('%s/QC_seq/%s/' %(parameters.species,gene))
+    [n,l,s,m,a] = run_count_diff(bseq_names,gene)
+    #dna = run_count_diff2(bseq_names,gene)
+    with open('%s/RESULT/count.txt' %parameters.species,'a') as txt:
+      txt.write('%s %d %d %d %d %d\n' %(gene,n,l,s,m,a))
+    print '%s: n= %d len= %d silent= %d missense= %d aa= %d' %(gene,n,l,s,m,a)
+   # print '%s %d' %(gene,dna)
+
 for gene in genes:
   #rename('Mycobacterium_tuberculosis/output_seq/%s/' %gene,'.txt','.fasta')
-  txt_names = file_names('%s/output_seq/%s/DNA/' %(parameters.species,gene))
-  qc(txt_names,gene)
+  #txt_names = file_names('%s/output_seq/%s/DNA/' %(parameters.species,gene))
+  #qc(txt_names,gene)
+  print gene
   bseq_names = file_names('%s/QC_seq/%s/' %(parameters.species,gene))
-  [n,l,s,m,a] = run_count_diff(bseq_names,gene)
+  (ref_prot,aa_dict_lst) = run_count_by_aa(bseq_names,gene)
   #dna = run_count_diff2(bseq_names,gene)
-  with open('%s/count.txt' %parameters.species,'a') as txt:
-    txt.write('%s %d %d %d %d %d\n' %(gene,n,l,s,m,a))
-  print '%s: n= %d len= %d silent= %d missense= %d aa= %d' %(gene,n,l,s,m,a)
- # print '%s %d' %(gene,dna)
+  workbook = xlsxwriter.Workbook(parameters.species+'/RESULT/'+gene+'.xlsx')
+  ws0 = workbook.add_worksheet('by_aa')
+  col = 1
+  for j in range(len(aa)):
+    ws0.write(j+2,0,aa[j])
+  for i in range(len(aa_dict_lst)):
+    if has_mut(aa_dict_lst[i]):
+      ws0.write(0,col,i+1)
+      ws0.write(1,col,ref_prot[i])
+      for j in range(len(aa)):
+        if aa_dict_lst[i][aa[j]]>0:
+          ws0.write(j+2,col,aa_dict_lst[i][aa[j]])
+      col += 1
+  """
+  for i in range(len(aa_dict_lst)):
+    ws0.write(1,i+1,ref_prot[i])
+    ws0.write(0,i+1,i+1)
+  for j in range(len(aa)):
+    ws0.write(j+2,0,aa[j])
+  for i in range(len(aa_dict_lst)):
+    for j in range(len(aa)):
+      ws0.write(j+2,i+1,aa_dict_lst[i][aa[j]])
+  """
+  workbook.close()
+
 
 """
 gene = 'Rv0050'
