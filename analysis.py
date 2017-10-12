@@ -235,12 +235,12 @@ def qc(bseq_names,ref_gene):
           #copyfile('%s%s.fasta' %(output_seq_dir,bSeq.gn), '%s%s.fasta' %(qc_dir,bSeq.gn))
         elif len(bSeq.seq)>len(ref_gene_seq):
           with open('%s/RESULT/%s_log.txt' %(parameters.species,ref_gene),'a') as txt:
-            txt.write('**** Insertion %s\n' %bSeq.gn)
+            txt.write('>Insertion %s\n' %bSeq.gn)
           makemydir('%s/Insertion/%s/' %(parameters.species,ref_gene))
           copyfile('%s%s.fasta' %(output_seq_dir,bSeq.gn), '%s/Insertion/%s/%s.fasta' %(parameters.species,ref_gene,bSeq.gn))
         else:
           with open('%s/RESULT/%s_log.txt' %(parameters.species,ref_gene),'a') as txt:
-            txt.write('**** Incomplete %s\n' %bSeq.gn)
+            txt.write('>Incomplete %s\n' %bSeq.gn)
 
   #os.chdir(cwd)
 
@@ -358,7 +358,10 @@ if True:
     txt_names = file_names('%s/output_seq/%s/DNA/' %(parameters.species,gene))
     with open('%s/RESULT/%s_log.txt' %(parameters.species,gene),'w') as logtxt:
       logtxt.write('Print Out: %s\n(Each entry: ref-query, x=silent, *=missense)\n\n' %gene)
+      logtxt.write('The following genomes are not handled in this result:\n')
     qc(txt_names,gene)
+    with open('%s/RESULT/%s_log.txt' %(parameters.species,gene),'a') as logtxt:
+      logtxt.write('\n')
     bseq_names = file_names('%s/QC_seq/%s/' %(parameters.species,gene))
     [n,l,s,m,a] = run_count_diff(bseq_names,gene)
     #dna = run_count_diff2(bseq_names,gene)
