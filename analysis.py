@@ -130,6 +130,7 @@ def count_diff(seq_str,ref_seq,txt):
   silent = 0
   missense = 0
   aa = 0
+  log = {'ref':ref_seq,'match':'','query':seq_str}
   for pointer in range(len(seq_str)/3-1):
     nuc0 = (seq_str[pointer*3] == ref_seq[pointer*3])
     nuc1 = (seq_str[pointer*3+1] == ref_seq[pointer*3+1])
@@ -138,9 +139,33 @@ def count_diff(seq_str,ref_seq,txt):
       continue
     if prot[pointer] == ref_prot[pointer]:
       silent += [nuc0,nuc1,nuc2].count(False)
+      if nuc0:
+        log['match'] += ' '
+      else:
+        log['match'] += 'x'
+      if nuc1:
+        log['match'] += ' '
+      else:
+        log['match'] += 'x'
+      if nuc2:
+        log['match'] += ' '
+      else:
+        log['match'] += 'x'
     else:
       missense += [nuc0,nuc1,nuc2].count(False)
       aa += 1
+      if nuc0:
+        log['match'] += ' '
+      else:
+        log['match'] += '*'
+      if nuc1:
+        log['match'] += ' '
+      else:
+        log['match'] += '*'
+      if nuc2:
+        log['match'] += ' '
+      else:
+        log['match'] += '*'
 
   if seq == ref_seq:
     identical = 1
@@ -152,7 +177,7 @@ def count_diff(seq_str,ref_seq,txt):
   #if len(prot)<len(ref_prot):
     #print 'Early stop codon: %s' %txt[:-6]
 
-  return [silent,missense,aa,identical]
+  return [silent,missense,aa,identical,log]
 
 def count_diff2(seq,ref_seq):
   diff = 0
@@ -209,13 +234,13 @@ def qc(bseq_names,ref_gene):
           copyfile(output_seq_dir+txt, qc_dir+txt)
           #copyfile('%s%s.fasta' %(output_seq_dir,bSeq.gn), '%s%s.fasta' %(qc_dir,bSeq.gn))
         elif len(bSeq.seq)>len(ref_gene_seq):
-          with open('%s/RESULT/%s_not_in_result.txt' %(parameters.species,ref_gene),'a') as txt:
-            txt.write('Insertion %s\n' %bSeq.gn)
+          with open('%s/RESULT/%s_log.txt' %(parameters.species,ref_gene),'a') as txt:
+            txt.write('**** Insertion %s\n' %bSeq.gn)
           makemydir('%s/Insertion/%s/' %(parameters.species,ref_gene))
           copyfile('%s%s.fasta' %(output_seq_dir,bSeq.gn), '%s/Insertion/%s/%s.fasta' %(parameters.species,ref_gene,bSeq.gn))
         else:
-          with open('%s/RESULT/%s_not_in_result.txt' %(parameters.species,ref_gene),'a') as txt:
-            txt.write('Incomplete %s\n' %bSeq.gn)
+          with open('%s/RESULT/%s_log.txt' %(parameters.species,ref_gene),'a') as txt:
+            txt.write('**** Incomplete %s\n' %bSeq.gn)
 
   #os.chdir(cwd)
 
@@ -227,10 +252,21 @@ def run_count_diff(bseq_names,ref_gene):
   aa = 0
   for txt in bseq_names:
     bseq = txt_to_seq(seq_dir+txt)
-    [s,m,a,i] = count_diff(bseq.seq,ref_gene_seq,txt)
+    [s,m,a,i,log] = count_diff(bseq.seq,ref_gene_seq,txt)
     silent += s
     missense += m
     aa += a
+    if s>0 or m>0:
+      with open('%s/RESULT/%s_log.txt' %(parameters.species,ref_gene),'a') as logtxt:
+        logtxt.write('%s\n>%s\n\n' %('#'*75,txt))
+        n = 0
+        while n<len(log['match']):
+          logtxt.write('%s\n' %log['ref'][n:n+75])
+          logtxt.write('%s\n' %log['match'][n:n+75])
+          logtxt.write('%s\n' %log['query'][n:n+75])
+          n += 75
+        logtxt.write('\n')
+
   return [len(bseq_names),len(ref_gene_seq),silent,missense,aa]
 
 def run_count_seq(bseq_names,ref_gene,seqs):
@@ -320,6 +356,8 @@ if True:
   for gene in genes:
     #rename('Mycobacterium_tuberculosis/output_seq/%s/' %gene,'.txt','.fasta')
     txt_names = file_names('%s/output_seq/%s/DNA/' %(parameters.species,gene))
+    with open('%s/RESULT/%s_log.txt' %(parameters.species,gene),'w') as logtxt:
+      logtxt.write('Print Out: %s\n(Each entry: ref-query, x=silent, *=missense)\n\n' %gene)
     qc(txt_names,gene)
     bseq_names = file_names('%s/QC_seq/%s/' %(parameters.species,gene))
     [n,l,s,m,a] = run_count_diff(bseq_names,gene)
